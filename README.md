@@ -32,7 +32,7 @@ Release Guard is a Spring Boot application that helps validate Jira issue readin
 ### Steps
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/release-guard.git
+   git clone https://github.com/jhonatademuner/release-guard.git
    cd release-guard
    ```
 
