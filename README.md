@@ -121,7 +121,7 @@ GET /api/jira/issue/{issueKey}/block-status
 Property | Description
 ------------|-----------
 jira.instance-url | Base URL of your Jira instance
-jira.email	Email | for Jira authentication
+jira.email | Email for Jira authentication
 jira.api-token | Jira API token
 
 ## License 📄
