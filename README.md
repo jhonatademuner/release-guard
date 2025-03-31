@@ -115,14 +115,5 @@ GET /api/jira/issue/{issueKey}/block-status
 
 > 💡 **Please ensure all tests pass and include new tests for any added functionality.**
 
-## Configuration ⚙️
-**Environment Variables:**
-
-Property | Description
-------------|-----------
-jira.instance-url | Base URL of your Jira instance
-jira.email | Email for Jira authentication
-jira.api-token | Jira API token
-
 ## License 📄
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
