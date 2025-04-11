@@ -6,10 +6,18 @@ import org.springframework.stereotype.Component
 @Component
 class JiraIssueAssembler {
 
-    fun toSimplified(issue: JiraIssue?): SimplifiedJiraIssue {
+    fun toSimplified(issue: JiraIssue?, isUrgent: Boolean = false): SimplifiedJiraIssue {
         val issueData = issue ?: return SimplifiedJiraIssue()
+
+        val key = if (isUrgent) {
+                "!${issueData.key}"
+            } else {
+                issueData.key
+            }
+
+
         return SimplifiedJiraIssue(
-            key = issueData.key,
+            key = key,
             summary = issueData.fields.summary,
             status = SimplifiedJiraIssueStatus.valueOf(normalizeIssueStatusCategoryName(issueData.fields.status.statusCategory.name)),
             linkedIssues = issueData.fields.issueLinks?.mapNotNull { toSimplifiedLinkedIssue(it) }?.toMutableList() ?: mutableListOf()

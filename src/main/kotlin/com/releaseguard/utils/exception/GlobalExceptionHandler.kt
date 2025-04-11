@@ -1,10 +1,13 @@
 package com.releaseguard.utils.exception
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.context.request.ServletWebRequest
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
@@ -13,23 +16,37 @@ import java.util.*
 @RestControllerAdvice
 class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
-    @ExceptionHandler(ResourceNotFoundException::class)
-    fun handleResourceNotFoundException(
+    @ExceptionHandler(value = [ResourceNotFoundException::class, HttpClientErrorException.NotFound::class])
+    fun handleNotFoundExceptions(
         ex: Exception,
         request: WebRequest
     ): ResponseEntity<Any> {
         val path = (request as? ServletWebRequest)?.request?.requestURI
 
+        val message = when (ex) {
+            is HttpClientErrorException.NotFound -> {
+                try {
+                    val json: JsonNode = jacksonObjectMapper().readTree(ex.responseBodyAsString)
+                    json["errorMessages"]?.firstOrNull()?.asText() ?: "Resource not found"
+                } catch (e: Exception) {
+                    "Resource not found"
+                }
+            }
+            else -> ex.message ?: "Resource not found"
+        }
+
         val errorResponse = ErrorResponse(
             timestamp = Date(),
             status = HttpStatus.NOT_FOUND.value(),
             error = HttpStatus.NOT_FOUND.reasonPhrase,
-            message = ex.message,
+            message = message,
             path = path
         )
 
         return ResponseEntity(errorResponse, HttpHeaders(), HttpStatus.NOT_FOUND)
     }
+
+
 
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleIllegalArgumentException(
@@ -48,4 +65,5 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
         return ResponseEntity(errorResponse, HttpHeaders(), HttpStatus.BAD_REQUEST)
     }
+
 }

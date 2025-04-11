@@ -1,12 +1,11 @@
 package com.releaseguard.client.jira
 
-import com.releaseguard.domain.jira.JiraIssue
-import com.releaseguard.utils.exception.ResourceNotFoundException
+import org.springframework.web.util.UriComponentsBuilder
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.*
 import org.springframework.stereotype.Component
-import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestTemplate
+import java.net.URI
 import java.util.*
 
 @Component
@@ -27,18 +26,25 @@ class JiraClient(
         return headers
     }
 
-    fun <T> get(endpoint: String, responseType: Class<T>): ResponseEntity<T> {
-        val url = "$instanceUrl$endpoint"
+    fun <T> get(
+        endpoint: String,
+        responseType: Class<T>,
+        params: Map<String, String> = emptyMap()
+    ): ResponseEntity<T> {
+        val baseUri = URI.create("$instanceUrl$endpoint")
+
+        val uriBuilder = UriComponentsBuilder
+            .fromUri(baseUri)
+
+        params.forEach { (key, value) ->
+            uriBuilder.queryParam(key, value)
+        }
+
+        val url = uriBuilder.build(true).toUri() // true = encode query params
+
         val entity = HttpEntity<String>(createHeaders())
 
-        return try {
-            restTemplate.exchange(url, HttpMethod.GET, entity, responseType)
-        } catch (ex: HttpClientErrorException.NotFound) {
-            ResponseEntity(null, HttpStatus.NOT_FOUND) // Ensure it properly catches and returns 404
-        } catch (ex: HttpClientErrorException) {
-            ResponseEntity(null, HttpStatus.INTERNAL_SERVER_ERROR) // Handle other client errors gracefully
-        }
+        return restTemplate.exchange(url, HttpMethod.GET, entity, responseType)
     }
-
 
 }
