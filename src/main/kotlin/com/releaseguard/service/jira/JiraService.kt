@@ -3,8 +3,6 @@ package com.releaseguard.service.jira
 import com.releaseguard.client.jira.JiraClient
 import com.releaseguard.domain.jira.*
 import com.releaseguard.utils.assembler.JiraIssueAssembler
-import com.releaseguard.utils.exception.ResourceNotFoundException
-import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 
 @Service
@@ -13,15 +11,16 @@ class JiraService(
     private val jiraIssueAssembler: JiraIssueAssembler
 ) {
 
-    fun getIssue(issueKey: String): SimplifiedJiraIssue {
-        if (issueKey.isBlank()) {
-            throw IllegalArgumentException("Issue key cannot be empty")
+    fun getIssue(key: String? = null, pullRequest: String? = null): SimplifiedJiraIssue {
+        if (key.isNullOrBlank() && pullRequest.isNullOrBlank()) {
+            throw IllegalArgumentException("Either key or pullRequest must be provided")
         }
-        val response = jiraClient.get("/rest/api/3/issue/$issueKey", JiraIssue::class.java)
-        if (response.statusCode == HttpStatus.NOT_FOUND) {
-            throw ResourceNotFoundException("Issue with key $issueKey not found")
-        }
-        return jiraIssueAssembler.toSimplified(response.body)
+
+        val isUrgent = key?.first() == '!'
+
+        val response = jiraClient.get("/rest/api/3/issue/$key", JiraIssue::class.java)
+
+        return jiraIssueAssembler.toSimplified(response.body, isUrgent)
     }
 
     fun checkIssueBlockStatus(simplifiedJiraIssue: SimplifiedJiraIssue): Boolean {
