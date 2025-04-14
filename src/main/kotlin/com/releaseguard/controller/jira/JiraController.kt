@@ -14,19 +14,17 @@ class JiraController (private val jiraService: JiraService) {
 
     @GetMapping("/issue")
     fun getSimplifiedIssue(
-        @RequestParam(required = false) key: String? = null,
-        @RequestParam(required = false) pullRequest: String? = null
+        @RequestParam(required = false) key: String
     ): ResponseEntity<SimplifiedJiraIssue> {
-        val simplifiedJiraIssue = jiraService.getIssue(key, pullRequest)
+        val simplifiedJiraIssue = jiraService.getIssue(key)
         return ResponseEntity(simplifiedJiraIssue, HttpStatus.OK)
     }
 
     @GetMapping("/issue/block-status")
     fun checkIssueBlockStatus(
-        @RequestParam(required = false) key: String? = null,
-        @RequestParam(required = false) pullRequest: String? = null
+        @RequestParam(required = false) key: String
     ): ResponseEntity<Boolean> {
-        val simplifiedJiraIssue = jiraService.getIssue(key, pullRequest)
+        val simplifiedJiraIssue = jiraService.getIssue(key)
         val isBlockingFree = jiraService.checkIssueBlockStatus(simplifiedJiraIssue)
         return ResponseEntity(isBlockingFree, HttpStatus.OK)
     }

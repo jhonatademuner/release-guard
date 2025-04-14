@@ -8,4 +8,5 @@ data class SimplifiedJiraIssue(
     var summary: String = "",
     var linkedIssues: MutableList<SimplifiedJiraLinkedIssue> = mutableListOf(),
     var status: SimplifiedJiraIssueStatus? = null,
+    var isUrgent: Boolean = false,
 )

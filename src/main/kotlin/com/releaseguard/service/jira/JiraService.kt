@@ -11,14 +11,15 @@ class JiraService(
     private val jiraIssueAssembler: JiraIssueAssembler
 ) {
 
-    fun getIssue(key: String? = null, pullRequest: String? = null): SimplifiedJiraIssue {
-        if (key.isNullOrBlank() && pullRequest.isNullOrBlank()) {
-            throw IllegalArgumentException("Either key or pullRequest must be provided")
+    fun getIssue(key: String): SimplifiedJiraIssue {
+        if (key.isBlank() ) {
+            throw IllegalArgumentException("Issue key must be provided")
         }
 
-        val isUrgent = key?.first() == '!'
+        val isUrgent = key.first() == '!'
+        val formattedKey = if (isUrgent) key.substring(1) else key
 
-        val response = jiraClient.get("/rest/api/3/issue/$key", JiraIssue::class.java)
+        val response = jiraClient.get("/rest/api/3/issue/$formattedKey", JiraIssue::class.java)
 
         return jiraIssueAssembler.toSimplified(response.body, isUrgent)
     }

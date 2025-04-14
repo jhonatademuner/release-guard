@@ -9,18 +9,12 @@ class JiraIssueAssembler {
     fun toSimplified(issue: JiraIssue?, isUrgent: Boolean = false): SimplifiedJiraIssue {
         val issueData = issue ?: return SimplifiedJiraIssue()
 
-        val key = if (isUrgent) {
-                "!${issueData.key}"
-            } else {
-                issueData.key
-            }
-
-
         return SimplifiedJiraIssue(
-            key = key,
+            key = issueData.key,
             summary = issueData.fields.summary,
             status = SimplifiedJiraIssueStatus.valueOf(normalizeIssueStatusCategoryName(issueData.fields.status.statusCategory.name)),
-            linkedIssues = issueData.fields.issueLinks?.mapNotNull { toSimplifiedLinkedIssue(it) }?.toMutableList() ?: mutableListOf()
+            linkedIssues = issueData.fields.issueLinks?.mapNotNull { toSimplifiedLinkedIssue(it) }?.toMutableList() ?: mutableListOf(),
+            isUrgent = isUrgent
         )
     }
 
