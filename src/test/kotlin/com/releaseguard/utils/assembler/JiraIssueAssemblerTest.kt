@@ -24,6 +24,7 @@ class JiraIssueAssemblerTest {
         assertTrue(result.key.isEmpty(), "Key should be empty on default instance")
         assertTrue(result.summary.isEmpty(), "Summary should be empty on default instance")
         assertTrue(result.linkedIssues.isEmpty(), "Linked issues list should be empty on default instance")
+        assertTrue(!result.isUrgent, "isUrgent flag should be false on default instance")
     }
 
     @Test
@@ -50,6 +51,7 @@ class JiraIssueAssemblerTest {
         // Expecting normalization: "In Progress" -> "IN_PROGRESS"
         assertEquals(SimplifiedJiraIssueStatus.valueOf("IN_PROGRESS"), result.status)
         assertTrue(result.linkedIssues.isEmpty(), "There should be no linked issues")
+        assertTrue(!result.isUrgent, "isUrgent flag should be false on default instance")
     }
 
     @Test
@@ -87,13 +89,14 @@ class JiraIssueAssemblerTest {
         )
 
         // Act
-        val result = assembler.toSimplified(jiraIssue)
+        val result = assembler.toSimplified(jiraIssue, true)
 
         // Assert
         assertEquals("JIRA-123", result.key)
         assertEquals("Main Issue", result.summary)
         assertEquals(SimplifiedJiraIssueStatus.valueOf("IN_PROGRESS"), result.status)
         assertEquals(1, result.linkedIssues.size)
+        assertEquals(true, result.isUrgent)
 
         val simplifiedLinkedIssue = result.linkedIssues.first()
         assertEquals("JIRA-456", simplifiedLinkedIssue.key)

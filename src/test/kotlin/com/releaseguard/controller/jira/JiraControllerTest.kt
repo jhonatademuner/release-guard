@@ -52,8 +52,8 @@ class JiraControllerTest {
         )
         every { jiraService.getIssue(issueKey) } returns simplifiedIssue
 
-        // Act and Assert
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue/$issueKey"))
+        // Act and Assert using query param "key"
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue").param("key", issueKey))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.key").value(issueKey))
             .andExpect(jsonPath("$.summary").value("Test Issue"))
@@ -66,13 +66,13 @@ class JiraControllerTest {
         val issueKey = "JIRA-123"
         every { jiraService.getIssue(issueKey) } throws ResourceNotFoundException("Issue with key $issueKey not found")
 
-        // Act and Assert
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue/$issueKey"))
+        // Act and Assert using query param "key"
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue").param("key", issueKey))
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.message").value("Issue with key $issueKey not found"))
             .andExpect(jsonPath("$.status").value(404))
             .andExpect(jsonPath("$.error").value("Not Found"))
-            .andExpect(jsonPath("$.path").value("/api/jira/issue/$issueKey"))
+            .andExpect(jsonPath("$.path").value("/api/jira/issue"))
     }
 
     @Test
@@ -94,8 +94,8 @@ class JiraControllerTest {
         every { jiraService.getIssue(issueKey) } returns simplifiedIssue
         every { jiraService.checkIssueBlockStatus(simplifiedIssue) } returns false
 
-        // Act and Assert
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue/$issueKey/block-status"))
+        // Act and Assert using query param "key" on /block-status endpoint
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue/block-status").param("key", issueKey))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$").value(false))
     }
@@ -119,8 +119,8 @@ class JiraControllerTest {
         every { jiraService.getIssue(issueKey) } returns simplifiedIssue
         every { jiraService.checkIssueBlockStatus(simplifiedIssue) } returns true
 
-        // Act and Assert
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue/$issueKey/block-status"))
+        // Act and Assert using query param "key" on /block-status endpoint
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue/block-status").param("key", issueKey))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$").value(true))
     }

@@ -1,104 +1,105 @@
 package com.releaseguard.client.jira
 
-import com.releaseguard.domain.jira.JiraIssue
-import com.releaseguard.domain.jira.JiraIssueFields
-import com.releaseguard.domain.jira.JiraIssueStatus
-import com.releaseguard.domain.jira.JiraIssueStatusCategory
-import io.mockk.every
-import io.mockk.mockk
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpMethod
-import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
-import org.springframework.web.client.HttpClientErrorException
+import org.springframework.http.*
 import org.springframework.web.client.RestTemplate
+import org.springframework.test.web.client.MockRestServiceServer
+import org.springframework.test.web.client.match.MockRestRequestMatchers.*
+import org.springframework.test.web.client.response.MockRestResponseCreators.*
 import java.util.*
+import kotlin.test.assertEquals
 
 class JiraClientTest {
 
+    private lateinit var restTemplate: RestTemplate
+    private lateinit var server: MockRestServiceServer
     private lateinit var jiraClient: JiraClient
-    private val restTemplate: RestTemplate = mockk()
 
-    private val instanceUrl = "https://jira.example.com"
-    private val email = "test@example.com"
-    private val apiToken = "fakeToken"
+    private val instanceUrl = "https://your-instance.atlassian.net/rest/api/3"
+    private val email = "user@example.com"
+    private val apiToken = "fake-token"
+
+    private val encodedAuth: String
+        get() = Base64.getEncoder().encodeToString("$email:$apiToken".toByteArray())
 
     @BeforeEach
-    fun setUp() {
+    fun setup() {
+        restTemplate = RestTemplate()
+        server = MockRestServiceServer.createServer(restTemplate)
         jiraClient = JiraClient(restTemplate, instanceUrl, email, apiToken)
     }
 
     @Test
-    fun `should fetch Jira issue successfully`() {
-        // Arrange
-        val endpoint = "/rest/api/2/issue/JIRA-123"
-        val mockIssue = JiraIssue(
-            key = "JIRA-123",
-            fields = JiraIssueFields(
-                summary = "Test Issue",
-                status = JiraIssueStatus(statusCategory = JiraIssueStatusCategory("To Do")),
-                issueLinks = mutableListOf()
-            )
+    fun `should perform GET request`() {
+        val expectedBody = """{"issue":"JRA-123"}"""
+        server.expect(requestTo("$instanceUrl/issue/JRA-123"))
+            .andExpect(method(HttpMethod.GET))
+            .andExpect(header("Authorization", "Basic $encodedAuth"))
+            .andRespond(withSuccess(expectedBody, MediaType.APPLICATION_JSON))
+
+        val response = jiraClient.get(
+            endpoint = "issue/JRA-123",
+            responseType = Map::class.java
         )
-        every {
-            restTemplate.exchange(
-                any<String>(),
-                eq(HttpMethod.GET),
-                any(),
-                eq(JiraIssue::class.java)
-            )
-        } returns ResponseEntity(mockIssue, HttpStatus.OK)
 
-        // Act
-        val response = jiraClient.get(endpoint, JiraIssue::class.java)
-
-        // Assert
         assertEquals(HttpStatus.OK, response.statusCode)
-        assertNotNull(response.body)
-        assertEquals("JIRA-123", response.body?.key)
-        assertEquals("Test Issue", response.body?.fields?.summary)
+        assertEquals("JRA-123", response.body?.get("issue"))
     }
 
     @Test
-    fun `should return 404 when Jira issue is not found`() {
-        // Arrange
-        val issueKey = "JIRA-123"
-        val endpoint = "/rest/api/3/issue/$issueKey"
-        val url = "$instanceUrl$endpoint"
+    fun `should perform POST request`() {
+        val requestBody = mapOf("fields" to mapOf("summary" to "Test Issue"))
+        val expectedResponse = """{"id": "10000", "key": "JRA-123"}"""
 
-        every { restTemplate.exchange(url, HttpMethod.GET, any(), JiraIssue::class.java) } throws
-                HttpClientErrorException.create(
-                    HttpStatus.NOT_FOUND,
-                    "Not Found",
-                    HttpHeaders(),
-                    byteArrayOf(),
-                    null
-                )
+        server.expect(requestTo("$instanceUrl/issue"))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(header("Authorization", "Basic $encodedAuth"))
+            .andExpect(content().json("""{"fields":{"summary":"Test Issue"}}"""))
+            .andRespond(withSuccess(expectedResponse, MediaType.APPLICATION_JSON))
 
-        // Act
-        val response = jiraClient.get(endpoint, JiraIssue::class.java)
+        val response = jiraClient.post(
+            endpoint = "issue",
+            request = requestBody,
+            responseType = Map::class.java
+        )
 
-        // Assert
-        assertThat(response.statusCode).isEqualTo(HttpStatus.NOT_FOUND)
+        assertEquals("10000", response.body?.get("id"))
+        assertEquals("JRA-123", response.body?.get("key"))
     }
 
+    @Test
+    fun `should perform PUT request`() {
+        val requestBody = mapOf("fields" to mapOf("summary" to "Updated summary"))
+        val expectedResponse = """{"updated": true}"""
+
+        server.expect(requestTo("$instanceUrl/issue/JRA-123"))
+            .andExpect(method(HttpMethod.PUT))
+            .andExpect(header("Authorization", "Basic $encodedAuth"))
+            .andExpect(content().json("""{"fields":{"summary":"Updated summary"}}"""))
+            .andRespond(withSuccess(expectedResponse, MediaType.APPLICATION_JSON))
+
+        val response = jiraClient.put(
+            endpoint = "issue/JRA-123",
+            request = requestBody,
+            responseType = Map::class.java
+        )
+
+        assertEquals(true, response.body?.get("updated"))
+    }
 
     @Test
-    fun `should create correct authorization header`() {
-        // Arrange
-        val authHeader = jiraClient.javaClass.getDeclaredMethod("createHeaders")
-        authHeader.isAccessible = true
-        val headers = authHeader.invoke(jiraClient) as org.springframework.http.HttpHeaders
+    fun `should perform DELETE request`() {
+        server.expect(requestTo("$instanceUrl/issue/JRA-123"))
+            .andExpect(method(HttpMethod.DELETE))
+            .andExpect(header("Authorization", "Basic $encodedAuth"))
+            .andRespond(withSuccess())
 
-        // Act
-        val expectedAuth = Base64.getEncoder().encodeToString("$email:$apiToken".toByteArray())
+        val response = jiraClient.delete(
+            endpoint = "issue/JRA-123",
+            responseType = Void::class.java
+        )
 
-        // Assert
-        assertTrue(headers.containsKey("Authorization"))
-        assertEquals("Basic $expectedAuth", headers.getFirst("Authorization"))
+        assertEquals(HttpStatus.OK, response.statusCode)
     }
 }
