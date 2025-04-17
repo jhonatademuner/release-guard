@@ -124,7 +124,7 @@ class JiraServiceTest {
         } returns ResponseEntity.ok(emptyJql)
 
         // Act & Assert
-        val exception = assertFailsWith<IllegalArgumentException> {
+        val exception = assertFailsWith<ResourceNotFoundException> {
             jiraService.findIssue(key = null, pullRequest = prUrl)
         }
         assertEquals("No issue found for the provided pull request URL.", exception.message)
