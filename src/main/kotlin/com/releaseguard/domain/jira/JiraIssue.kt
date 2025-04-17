@@ -38,3 +38,8 @@ data class JiraIssueLink(
 data class JiraIssueLinkType(
     val name: String
 )
+
+@Data
+data class JiraJqlResult(
+    val issues: List<JiraIssue>
+)

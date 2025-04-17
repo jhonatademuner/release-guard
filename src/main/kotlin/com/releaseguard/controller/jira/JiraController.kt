@@ -14,17 +14,25 @@ class JiraController (private val jiraService: JiraService) {
 
     @GetMapping("/issue")
     fun getSimplifiedIssue(
-        @RequestParam(required = false) key: String
+        @RequestParam(required = false) key: String? = null,
+        @RequestParam(required = false) pullRequest: String? = null
     ): ResponseEntity<SimplifiedJiraIssue> {
-        val simplifiedJiraIssue = jiraService.getIssue(key)
+        if (key.isNullOrBlank() && pullRequest.isNullOrBlank()) {
+            throw IllegalArgumentException("Either issue key or pull request url must be provided.")
+        }
+        val simplifiedJiraIssue = jiraService.findIssue(key, pullRequest)
         return ResponseEntity(simplifiedJiraIssue, HttpStatus.OK)
     }
 
     @GetMapping("/issue/block-status")
     fun checkIssueBlockStatus(
-        @RequestParam(required = false) key: String
+        @RequestParam(required = false) key: String? = null,
+        @RequestParam(required = false) pullRequest: String? = null
     ): ResponseEntity<Boolean> {
-        val simplifiedJiraIssue = jiraService.getIssue(key)
+        if (key.isNullOrBlank() && pullRequest.isNullOrBlank()) {
+            throw IllegalArgumentException("Either issue key or pull request url must be provided.")
+        }
+        val simplifiedJiraIssue = jiraService.findIssue(key, pullRequest)
         val isBlockingFree = jiraService.checkIssueBlockStatus(simplifiedJiraIssue)
         return ResponseEntity(isBlockingFree, HttpStatus.OK)
     }

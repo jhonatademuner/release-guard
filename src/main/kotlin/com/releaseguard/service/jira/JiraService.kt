@@ -3,7 +3,10 @@ package com.releaseguard.service.jira
 import com.releaseguard.client.jira.JiraClient
 import com.releaseguard.domain.jira.*
 import com.releaseguard.utils.assembler.JiraIssueAssembler
+import com.releaseguard.utils.exception.ResourceNotFoundException
 import org.springframework.stereotype.Service
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Service
 class JiraService(
@@ -11,17 +14,34 @@ class JiraService(
     private val jiraIssueAssembler: JiraIssueAssembler
 ) {
 
-    fun getIssue(key: String): SimplifiedJiraIssue {
-        if (key.isBlank() ) {
-            throw IllegalArgumentException("Issue key must be provided")
+    fun findIssue(key: String? = null, pullRequest: String? = null): SimplifiedJiraIssue {
+        return if (key.isNullOrBlank()) {
+            findIssueByPullRequest(pullRequest!!)
+        } else {
+            findIssueByKey(key)
+        }
+    }
+
+    private fun findIssueByKey(key: String) : SimplifiedJiraIssue {
+        val isUrgent = key.first() == '!'
+        val response = jiraClient.get("/rest/api/3/issue/$key", JiraIssue::class.java)
+        return jiraIssueAssembler.toSimplified(response.body, isUrgent)
+    }
+
+    private fun findIssueByPullRequest(pullRequest: String) : SimplifiedJiraIssue {
+        val query = "'hidden-pr-url[URL Field]' = '$pullRequest'"
+        val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
+        val params = mapOf("jql" to encodedQuery)
+
+        val response = jiraClient.get("/rest/api/3/search", JiraJqlResult::class.java, params)
+
+        val body = requireNotNull(response.body) { "Jira response body was null." }
+
+        if (body.issues.isEmpty()) {
+            throw ResourceNotFoundException("No issue found for the provided pull request URL.")
         }
 
-        val isUrgent = key.first() == '!'
-        val formattedKey = if (isUrgent) key.substring(1) else key
-
-        val response = jiraClient.get("/rest/api/3/issue/$formattedKey", JiraIssue::class.java)
-
-        return jiraIssueAssembler.toSimplified(response.body, isUrgent)
+        return jiraIssueAssembler.toSimplified(body.issues.first())
     }
 
     fun checkIssueBlockStatus(simplifiedJiraIssue: SimplifiedJiraIssue): Boolean {

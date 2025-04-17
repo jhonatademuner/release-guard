@@ -17,8 +17,9 @@ import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @WebMvcTest(JiraController::class)
 @Import(JiraControllerTest.TestConfig::class, GlobalExceptionHandler::class)
@@ -38,22 +39,20 @@ class JiraControllerTest {
 
     @BeforeEach
     fun setUp() {
-        // Reset state of the mock if needed before each test
+        // reset mocks if needed
     }
 
     @Test
-    fun `should return OK and simplified issue when issue is found`() {
-        // Arrange
+    fun `findIssue by key should return OK and simplified issue`() {
         val issueKey = "JIRA-123"
         val simplifiedIssue = SimplifiedJiraIssue(
             key = issueKey,
             summary = "Test Issue",
             status = SimplifiedJiraIssueStatus.TO_DO
         )
-        every { jiraService.getIssue(issueKey) } returns simplifiedIssue
+        every { jiraService.findIssue(key = issueKey, pullRequest = null) } returns simplifiedIssue
 
-        // Act and Assert using query param "key"
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue").param("key", issueKey))
+        mockMvc.perform(get("/api/jira/issue").param("key", issueKey))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.key").value(issueKey))
             .andExpect(jsonPath("$.summary").value("Test Issue"))
@@ -61,13 +60,34 @@ class JiraControllerTest {
     }
 
     @Test
-    fun `should return NOT_FOUND when issue is not found`() {
-        // Arrange
-        val issueKey = "JIRA-123"
-        every { jiraService.getIssue(issueKey) } throws ResourceNotFoundException("Issue with key $issueKey not found")
+    fun `findIssue by pullRequest should return OK and simplified issue`() {
+        val prUrl = "http://github.com/org/repo/pull/1"
+        val simplifiedIssue = SimplifiedJiraIssue(
+            key = "PR-456",
+            summary = "PR Issue",
+            status = SimplifiedJiraIssueStatus.IN_PROGRESS
+        )
+        every { jiraService.findIssue(key = null, pullRequest = prUrl) } returns simplifiedIssue
 
-        // Act and Assert using query param "key"
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue").param("key", issueKey))
+        mockMvc.perform(get("/api/jira/issue").param("pullRequest", prUrl))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.key").value("PR-456"))
+            .andExpect(jsonPath("$.summary").value("PR Issue"))
+            .andExpect(jsonPath("$.status").value(SimplifiedJiraIssueStatus.IN_PROGRESS.name))
+    }
+
+    @Test
+    fun `findIssue should return BAD_REQUEST when no parameters provided`() {
+        mockMvc.perform(get("/api/jira/issue"))
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `findIssue should return NOT_FOUND when issue not found`() {
+        val issueKey = "JIRA-404"
+        every { jiraService.findIssue(key = issueKey, pullRequest = null) } throws ResourceNotFoundException("Issue with key $issueKey not found")
+
+        mockMvc.perform(get("/api/jira/issue").param("key", issueKey))
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.message").value("Issue with key $issueKey not found"))
             .andExpect(jsonPath("$.status").value(404))
@@ -76,12 +96,11 @@ class JiraControllerTest {
     }
 
     @Test
-    fun `should return OK and block status when issue is blocked`() {
-        // Arrange
+    fun `blockStatus by key should return OK and false when issue is blocked`() {
         val issueKey = "JIRA-123"
         val simplifiedIssue = SimplifiedJiraIssue(
             key = issueKey,
-            summary = "Test Issue",
+            summary = "Test",
             status = SimplifiedJiraIssueStatus.TO_DO,
             linkedIssues = mutableListOf(
                 SimplifiedJiraLinkedIssue(
@@ -91,22 +110,20 @@ class JiraControllerTest {
                 )
             )
         )
-        every { jiraService.getIssue(issueKey) } returns simplifiedIssue
+        every { jiraService.findIssue(key = issueKey, pullRequest = null) } returns simplifiedIssue
         every { jiraService.checkIssueBlockStatus(simplifiedIssue) } returns false
 
-        // Act and Assert using query param "key" on /block-status endpoint
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue/block-status").param("key", issueKey))
+        mockMvc.perform(get("/api/jira/issue/block-status").param("key", issueKey))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$").value(false))
     }
 
     @Test
-    fun `should return OK and block status when issue is not blocked`() {
-        // Arrange
+    fun `blockStatus by key should return OK and true when issue is not blocked`() {
         val issueKey = "JIRA-123"
         val simplifiedIssue = SimplifiedJiraIssue(
             key = issueKey,
-            summary = "Test Issue",
+            summary = "Test",
             status = SimplifiedJiraIssueStatus.TO_DO,
             linkedIssues = mutableListOf(
                 SimplifiedJiraLinkedIssue(
@@ -116,12 +133,17 @@ class JiraControllerTest {
                 )
             )
         )
-        every { jiraService.getIssue(issueKey) } returns simplifiedIssue
+        every { jiraService.findIssue(key = issueKey, pullRequest = null) } returns simplifiedIssue
         every { jiraService.checkIssueBlockStatus(simplifiedIssue) } returns true
 
-        // Act and Assert using query param "key" on /block-status endpoint
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/jira/issue/block-status").param("key", issueKey))
+        mockMvc.perform(get("/api/jira/issue/block-status").param("key", issueKey))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$").value(true))
+    }
+
+    @Test
+    fun `blockStatus should return BAD_REQUEST when no parameters provided`() {
+        mockMvc.perform(get("/api/jira/issue/block-status"))
+            .andExpect(status().isBadRequest)
     }
 }

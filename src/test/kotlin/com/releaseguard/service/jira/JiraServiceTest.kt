@@ -27,31 +27,23 @@ class JiraServiceTest {
     }
 
     @Test
-    fun `getIssue should throw IllegalArgumentException if both key and pullRequest are empty`() {
-        val exception = assertFailsWith<IllegalArgumentException> {
-            jiraService.getIssue("")
-        }
-        assertEquals("Issue key must be provided", exception.message)
-    }
-
-    @Test
-    fun `getIssue should throw ResourceNotFoundException if issue is not found`() {
+    fun `findIssue should throw ResourceNotFoundException if issue key exists but not found`() {
         // Arrange
         val issueKey = "JIRA-123"
         val responseEntity: ResponseEntity<JiraIssue> = ResponseEntity.status(HttpStatus.NOT_FOUND).build()
         every { jiraClient.get("/rest/api/3/issue/$issueKey", JiraIssue::class.java) } returns responseEntity
-        // Assume that the assembler throws ResourceNotFoundException when the JiraIssue is null.
+        // Simulate assembler throwing when response.body is null
         every { jiraIssueAssembler.toSimplified(null, false) } throws ResourceNotFoundException("Issue with key $issueKey not found")
 
         // Act & Assert
         val exception = assertFailsWith<ResourceNotFoundException> {
-            jiraService.getIssue(issueKey)
+            jiraService.findIssue(key = issueKey)
         }
         assertEquals("Issue with key $issueKey not found", exception.message)
     }
 
     @Test
-    fun `getIssue should return SimplifiedJiraIssue when issue exists`() {
+    fun `findIssue should return SimplifiedJiraIssue when issue key exists`() {
         // Arrange
         val issueKey = "JIRA-123"
         val jiraIssue = JiraIssue(
@@ -70,15 +62,72 @@ class JiraServiceTest {
 
         val responseEntity = ResponseEntity.status(HttpStatus.OK).body(jiraIssue)
         every { jiraClient.get("/rest/api/3/issue/$issueKey", JiraIssue::class.java) } returns responseEntity
-
-        // In this case, isUrgent is false because key does not start with '!'
+        // isUrgent = false
         every { jiraIssueAssembler.toSimplified(jiraIssue, false) } returns simplifiedJiraIssue
 
         // Act
-        val result = jiraService.getIssue(issueKey)
+        val result = jiraService.findIssue(key = issueKey)
 
         // Assert
         assertEquals(simplifiedJiraIssue, result)
+    }
+
+    @Test
+    fun `findIssue should return SimplifiedJiraIssue when searching by pullRequest`() {
+        // Arrange
+        val prUrl = "http://github.com/org/repo/pull/1"
+        val jqlResult = JiraJqlResult(
+            issues = listOf(
+                JiraIssue(
+                    key = "JIRA-456",
+                    fields = JiraIssueFields(
+                        summary = "PR-linked Issue",
+                        status = JiraIssueStatus(statusCategory = JiraIssueStatusCategory("In Progress")),
+                        issueLinks = mutableListOf()
+                    )
+                )
+            )
+        )
+        val simplifiedFromJql = SimplifiedJiraIssue(
+            key = "JIRA-456",
+            summary = "PR-linked Issue",
+            status = SimplifiedJiraIssueStatus.IN_PROGRESS
+        )
+
+        every {
+            jiraClient.get(
+                "/rest/api/3/search",
+                JiraJqlResult::class.java,
+                mapOf("jql" to java.net.URLEncoder.encode("'hidden-pr-url[URL Field]' = '$prUrl'", java.nio.charset.StandardCharsets.UTF_8.toString()))
+            )
+        } returns ResponseEntity.ok(jqlResult)
+        every { jiraIssueAssembler.toSimplified(jqlResult.issues.first()) } returns simplifiedFromJql
+
+        // Act
+        val result = jiraService.findIssue(key = null, pullRequest = prUrl)
+
+        // Assert
+        assertEquals(simplifiedFromJql, result)
+    }
+
+    @Test
+    fun `findIssue should throw IllegalArgumentException if no issue found for pullRequest`() {
+        // Arrange
+        val prUrl = "http://github.com/org/repo/pull/2"
+        val emptyJql = JiraJqlResult(issues = emptyList())
+        every {
+            jiraClient.get(
+                "/rest/api/3/search",
+                JiraJqlResult::class.java,
+                mapOf("jql" to java.net.URLEncoder.encode("'hidden-pr-url[URL Field]' = '$prUrl'", java.nio.charset.StandardCharsets.UTF_8.toString()))
+            )
+        } returns ResponseEntity.ok(emptyJql)
+
+        // Act & Assert
+        val exception = assertFailsWith<IllegalArgumentException> {
+            jiraService.findIssue(key = null, pullRequest = prUrl)
+        }
+        assertEquals("No issue found for the provided pull request URL.", exception.message)
     }
 
     @Test
