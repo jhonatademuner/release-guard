@@ -8,7 +8,7 @@ import org.springframework.web.util.UriComponentsBuilder
 import java.net.URI
 
 @Component
-class GitHubClient(
+class GithubClient(
     private val restTemplate: RestTemplate,
     @Value("\${github.api-url}") private val apiUrl: String,
     @Value("\${github.api-token}") private val apiToken: String

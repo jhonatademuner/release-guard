@@ -7,14 +7,13 @@ import org.springframework.web.client.RestTemplate
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.*
 import org.springframework.test.web.client.response.MockRestResponseCreators.*
-import org.springframework.web.util.UriComponentsBuilder
 import kotlin.test.assertEquals
 
-class GitHubClientTest {
+class GithubClientTest {
 
     private lateinit var restTemplate: RestTemplate
     private lateinit var server: MockRestServiceServer
-    private lateinit var gitHubClient: GitHubClient
+    private lateinit var gitHubClient: GithubClient
 
     private val apiUrl = "https://api.github.com"
     private val apiToken = "fake-token"
@@ -23,7 +22,7 @@ class GitHubClientTest {
     fun setup() {
         restTemplate = RestTemplate()
         server = MockRestServiceServer.createServer(restTemplate)
-        gitHubClient = GitHubClient(restTemplate, apiUrl, apiToken)
+        gitHubClient = GithubClient(restTemplate, apiUrl, apiToken)
     }
 
     @Test
