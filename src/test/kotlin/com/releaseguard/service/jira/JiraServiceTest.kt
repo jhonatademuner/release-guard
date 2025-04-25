@@ -130,7 +130,7 @@ class JiraServiceTest {
         val exception = assertFailsWith<ResourceNotFoundException> {
             jiraService.findIssue(key = null, pullRequestUrl = prUrl)
         }
-        assertEquals("No issue found for the provided pull request URL.", exception.message)
+        assertEquals("No issue found for the provided pull request.", exception.message)
     }
 
     @Test
