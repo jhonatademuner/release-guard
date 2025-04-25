@@ -1,7 +1,9 @@
 package com.releaseguard.service.jira
 
 import com.releaseguard.client.jira.JiraClient
+import com.releaseguard.domain.github.SimplifiedGithubPullRequest
 import com.releaseguard.domain.jira.*
+import com.releaseguard.service.github.GithubService
 import com.releaseguard.utils.assembler.JiraIssueAssembler
 import com.releaseguard.utils.exception.ResourceNotFoundException
 import org.springframework.stereotype.Service
@@ -11,20 +13,27 @@ import java.nio.charset.StandardCharsets
 @Service
 class JiraService(
     private val jiraClient: JiraClient,
-    private val jiraIssueAssembler: JiraIssueAssembler
+    private val jiraIssueAssembler: JiraIssueAssembler,
+    private val githubService: GithubService
 ) {
 
-    fun findIssue(key: String? = null, pullRequest: String? = null): SimplifiedJiraIssue {
-        return if (key.isNullOrBlank()) {
-            findIssueByPullRequest(pullRequest!!)
-        } else {
+    fun findIssue(key: String? = null, pullRequestUrl: String? = null): SimplifiedJiraIssue {
+        return if (!key.isNullOrBlank()) {
             findIssueByKey(key)
+        } else if (!pullRequestUrl.isNullOrBlank()) {
+            findIssueByPullRequest(pullRequestUrl)
+        } else {
+            throw IllegalArgumentException("Either key or pullRequestUrl must be provided.")
         }
     }
 
     private fun findIssueByKey(key: String) : SimplifiedJiraIssue {
         val isUrgent = key.first() == '!'
-        val response = jiraClient.get("/rest/api/3/issue/$key", JiraIssue::class.java)
+        var formattedKey = key
+        if (isUrgent) {
+            formattedKey = key.substring(1)
+        }
+        val response = jiraClient.get("/rest/api/3/issue/$formattedKey", JiraIssue::class.java)
         return jiraIssueAssembler.toSimplified(response.body, isUrgent)
     }
 
@@ -44,15 +53,21 @@ class JiraService(
         return jiraIssueAssembler.toSimplified(body.issues.first())
     }
 
-    fun checkIssueBlockStatus(simplifiedJiraIssue: SimplifiedJiraIssue): Boolean {
-        if (simplifiedJiraIssue.key.first() == '!') return true
-        var isBlockingFree = true
+    fun checkIssueBlockStatus(simplifiedJiraIssue: SimplifiedJiraIssue, pullRequestUrl: String? = null): Boolean {
+        if (simplifiedJiraIssue.isUrgent) return true
+
+        if (!pullRequestUrl.isNullOrBlank()){
+            val pullRequest = githubService.findPullRequest(pullRequestUrl)
+            if(githubService.isUrgentPullRequest(pullRequest)) return true
+        }
+
         for (issue in simplifiedJiraIssue.linkedIssues) {
-            if (issue.type == "BLOCKS" && issue.linkDirection == JiraLinkedIssueDirection.INWARD && issue.status != SimplifiedJiraIssueStatus.DONE) {
-                isBlockingFree = false
-                break
+            if (issue.type == "BLOCKS"
+                && (issue.linkDirection == JiraLinkedIssueDirection.INWARD
+                && issue.status != SimplifiedJiraIssueStatus.DONE)) {
+                return false
             }
         }
-        return isBlockingFree
+        return true
     }
 }

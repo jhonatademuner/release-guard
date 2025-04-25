@@ -33,7 +33,7 @@ class JiraController (private val jiraService: JiraService) {
             throw IllegalArgumentException("Either issue key or pull request url must be provided.")
         }
         val simplifiedJiraIssue = jiraService.findIssue(key, pullRequest)
-        val isBlockingFree = jiraService.checkIssueBlockStatus(simplifiedJiraIssue)
+        val isBlockingFree = jiraService.checkIssueBlockStatus(simplifiedJiraIssue, pullRequest)
         return ResponseEntity(isBlockingFree, HttpStatus.OK)
     }
 

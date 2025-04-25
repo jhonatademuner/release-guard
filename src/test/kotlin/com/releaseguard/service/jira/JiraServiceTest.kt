@@ -2,6 +2,7 @@ package com.releaseguard.service.jira
 
 import com.releaseguard.client.jira.JiraClient
 import com.releaseguard.domain.jira.*
+import com.releaseguard.service.github.GithubService
 import com.releaseguard.utils.assembler.JiraIssueAssembler
 import com.releaseguard.utils.exception.ResourceNotFoundException
 import io.mockk.every
@@ -17,13 +18,15 @@ class JiraServiceTest {
 
     private lateinit var jiraClient: JiraClient
     private lateinit var jiraIssueAssembler: JiraIssueAssembler
+    private lateinit var githubService: GithubService
     private lateinit var jiraService: JiraService
 
     @BeforeEach
     fun setup() {
         jiraClient = mockk()
         jiraIssueAssembler = mockk()
-        jiraService = JiraService(jiraClient, jiraIssueAssembler)
+        githubService = mockk()
+        jiraService = JiraService(jiraClient, jiraIssueAssembler, githubService)
     }
 
     @Test
@@ -104,7 +107,7 @@ class JiraServiceTest {
         every { jiraIssueAssembler.toSimplified(jqlResult.issues.first()) } returns simplifiedFromJql
 
         // Act
-        val result = jiraService.findIssue(key = null, pullRequest = prUrl)
+        val result = jiraService.findIssue(key = null, pullRequestUrl = prUrl)
 
         // Assert
         assertEquals(simplifiedFromJql, result)
@@ -125,7 +128,7 @@ class JiraServiceTest {
 
         // Act & Assert
         val exception = assertFailsWith<ResourceNotFoundException> {
-            jiraService.findIssue(key = null, pullRequest = prUrl)
+            jiraService.findIssue(key = null, pullRequestUrl = prUrl)
         }
         assertEquals("No issue found for the provided pull request URL.", exception.message)
     }

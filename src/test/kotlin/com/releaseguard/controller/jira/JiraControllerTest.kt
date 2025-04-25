@@ -50,7 +50,7 @@ class JiraControllerTest {
             summary = "Test Issue",
             status = SimplifiedJiraIssueStatus.TO_DO
         )
-        every { jiraService.findIssue(key = issueKey, pullRequest = null) } returns simplifiedIssue
+        every { jiraService.findIssue(key = issueKey, pullRequestUrl = null) } returns simplifiedIssue
 
         mockMvc.perform(get("/api/jira/issue").param("key", issueKey))
             .andExpect(status().isOk)
@@ -67,7 +67,7 @@ class JiraControllerTest {
             summary = "PR Issue",
             status = SimplifiedJiraIssueStatus.IN_PROGRESS
         )
-        every { jiraService.findIssue(key = null, pullRequest = prUrl) } returns simplifiedIssue
+        every { jiraService.findIssue(key = null, pullRequestUrl = prUrl) } returns simplifiedIssue
 
         mockMvc.perform(get("/api/jira/issue").param("pullRequest", prUrl))
             .andExpect(status().isOk)
@@ -85,7 +85,7 @@ class JiraControllerTest {
     @Test
     fun `findIssue should return NOT_FOUND when issue not found`() {
         val issueKey = "JIRA-404"
-        every { jiraService.findIssue(key = issueKey, pullRequest = null) } throws ResourceNotFoundException("Issue with key $issueKey not found")
+        every { jiraService.findIssue(key = issueKey, pullRequestUrl = null) } throws ResourceNotFoundException("Issue with key $issueKey not found")
 
         mockMvc.perform(get("/api/jira/issue").param("key", issueKey))
             .andExpect(status().isNotFound)
@@ -110,7 +110,7 @@ class JiraControllerTest {
                 )
             )
         )
-        every { jiraService.findIssue(key = issueKey, pullRequest = null) } returns simplifiedIssue
+        every { jiraService.findIssue(key = issueKey, pullRequestUrl = null) } returns simplifiedIssue
         every { jiraService.checkIssueBlockStatus(simplifiedIssue) } returns false
 
         mockMvc.perform(get("/api/jira/issue/block-status").param("key", issueKey))
@@ -133,7 +133,7 @@ class JiraControllerTest {
                 )
             )
         )
-        every { jiraService.findIssue(key = issueKey, pullRequest = null) } returns simplifiedIssue
+        every { jiraService.findIssue(key = issueKey, pullRequestUrl = null) } returns simplifiedIssue
         every { jiraService.checkIssueBlockStatus(simplifiedIssue) } returns true
 
         mockMvc.perform(get("/api/jira/issue/block-status").param("key", issueKey))
