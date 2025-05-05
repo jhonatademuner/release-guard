@@ -11,7 +11,8 @@ data class GithubPullRequest(
     val title: String,
     val body: String?,
     val labels: List<Label> = mutableListOf(),
-    val head: Head,
+    val head: BranchInfo,
+    val base: BranchInfo,
     @JsonProperty("created_at")
     val createdAt: Instant,
     @JsonProperty("updated_at")
@@ -24,7 +25,7 @@ data class GithubPullRequest(
         val defaultLabel: Boolean,
     )
 
-    data class Head(
+    data class BranchInfo(
         val label: String,
         val ref: String,
     )
