@@ -38,7 +38,8 @@ class GithubServiceTest {
                 GithubPullRequest.Label(name = "bug", color = "f29513", defaultLabel = false),
                 GithubPullRequest.Label(name = "urgent", color = "e11d21", defaultLabel = true)
             ),
-            head = GithubPullRequest.Head(label = "owner:feature-branch", ref = "feature-branch"),
+            head = GithubPullRequest.BranchInfo(label = "owner:feature-branch", ref = "feature-branch"),
+            base = GithubPullRequest.BranchInfo(label = "owner:main", ref = "main"),
             createdAt = now,
             updatedAt = now
         )
