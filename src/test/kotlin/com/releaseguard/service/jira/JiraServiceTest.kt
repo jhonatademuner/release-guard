@@ -2,7 +2,6 @@ package com.releaseguard.service.jira
 
 import com.releaseguard.client.jira.JiraClient
 import com.releaseguard.domain.jira.*
-import com.releaseguard.service.github.GithubService
 import com.releaseguard.utils.assembler.JiraIssueAssembler
 import com.releaseguard.utils.exception.ResourceNotFoundException
 import io.mockk.every
@@ -18,15 +17,13 @@ class JiraServiceTest {
 
     private lateinit var jiraClient: JiraClient
     private lateinit var jiraIssueAssembler: JiraIssueAssembler
-    private lateinit var githubService: GithubService
     private lateinit var jiraService: JiraService
 
     @BeforeEach
     fun setup() {
         jiraClient = mockk()
         jiraIssueAssembler = mockk()
-        githubService = mockk()
-        jiraService = JiraService(jiraClient, jiraIssueAssembler, githubService)
+        jiraService = JiraService(jiraClient, jiraIssueAssembler)
     }
 
     @Test
@@ -133,85 +130,4 @@ class JiraServiceTest {
         assertEquals("No issue found for the provided pull request.", exception.message)
     }
 
-    @Test
-    fun `checkIssueBlockStatus should return true if issue key starts with '!'`() {
-        // Arrange
-        val simplifiedJiraIssue = SimplifiedJiraIssue(
-            key = "!BLOCKED",
-            summary = "Blocked Issue",
-            status = SimplifiedJiraIssueStatus.TO_DO,
-            linkedIssues = mutableListOf()
-        )
-
-        // Act
-        val result = jiraService.checkIssueBlockStatus(simplifiedJiraIssue)
-
-        // Assert
-        assertEquals(true, result)
-    }
-
-    @Test
-    fun `checkIssueBlockStatus should return false if issue is blocked`() {
-        // Arrange
-        val simplifiedJiraIssue = SimplifiedJiraIssue(
-            key = "JIRA-123",
-            summary = "Test Issue",
-            status = SimplifiedJiraIssueStatus.TO_DO,
-            linkedIssues = mutableListOf(
-                SimplifiedJiraLinkedIssue(
-                    key = "JIRA-124",
-                    type = "BLOCKS",
-                    linkDirection = JiraLinkedIssueDirection.INWARD,
-                    status = SimplifiedJiraIssueStatus.TO_DO
-                )
-            )
-        )
-
-        // Act
-        val result = jiraService.checkIssueBlockStatus(simplifiedJiraIssue)
-
-        // Assert
-        assertEquals(false, result)
-    }
-
-    @Test
-    fun `checkIssueBlockStatus should return true if issue is not blocked`() {
-        // Arrange
-        val simplifiedJiraIssue = SimplifiedJiraIssue(
-            key = "JIRA-123",
-            summary = "Test Issue",
-            status = SimplifiedJiraIssueStatus.TO_DO,
-            linkedIssues = mutableListOf(
-                SimplifiedJiraLinkedIssue(
-                    key = "JIRA-124",
-                    type = "BLOCKS",
-                    linkDirection = JiraLinkedIssueDirection.INWARD,
-                    status = SimplifiedJiraIssueStatus.DONE
-                )
-            )
-        )
-
-        // Act
-        val result = jiraService.checkIssueBlockStatus(simplifiedJiraIssue)
-
-        // Assert
-        assertEquals(true, result)
-    }
-
-    @Test
-    fun `checkIssueBlockStatus should return true if no block link exists`() {
-        // Arrange
-        val simplifiedJiraIssue = SimplifiedJiraIssue(
-            key = "JIRA-123",
-            summary = "Test Issue",
-            status = SimplifiedJiraIssueStatus.TO_DO,
-            linkedIssues = mutableListOf()
-        )
-
-        // Act
-        val result = jiraService.checkIssueBlockStatus(simplifiedJiraIssue)
-
-        // Assert
-        assertEquals(true, result)
-    }
 }
