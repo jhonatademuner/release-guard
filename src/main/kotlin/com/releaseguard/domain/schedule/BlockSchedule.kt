@@ -1,4 +1,4 @@
-package com.releaseguard.domain.github.branch
+package com.releaseguard.domain.schedule
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import lombok.Data

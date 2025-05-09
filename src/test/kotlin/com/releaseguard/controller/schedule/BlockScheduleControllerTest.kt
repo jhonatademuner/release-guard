@@ -1,9 +1,8 @@
-package com.releaseguard.controller.github.branch
+package com.releaseguard.controller.schedule
 
-import com.releaseguard.domain.github.branch.BlockSchedule
-import com.releaseguard.service.github.branch.BlockScheduleService
+import com.releaseguard.domain.schedule.BlockSchedule
+import com.releaseguard.service.schedule.BlockScheduleService
 import com.releaseguard.utils.exception.GlobalExceptionHandler
-import com.releaseguard.utils.exception.ResourceNotFoundException
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test

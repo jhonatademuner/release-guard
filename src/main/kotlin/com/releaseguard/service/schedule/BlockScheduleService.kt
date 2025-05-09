@@ -1,7 +1,7 @@
-package com.releaseguard.service.github.branch
+package com.releaseguard.service.schedule
 
 import org.springframework.stereotype.Service
-import com.releaseguard.domain.github.branch.BlockSchedule
+import com.releaseguard.domain.schedule.BlockSchedule
 import java.io.File
 import java.nio.file.Paths
 import java.util.*

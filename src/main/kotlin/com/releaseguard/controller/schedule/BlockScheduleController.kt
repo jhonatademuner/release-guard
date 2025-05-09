@@ -1,7 +1,7 @@
-package com.releaseguard.controller.github.branch
+package com.releaseguard.controller.schedule
 
-import com.releaseguard.domain.github.branch.BlockSchedule
-import com.releaseguard.service.github.branch.BlockScheduleService
+import com.releaseguard.domain.schedule.BlockSchedule
+import com.releaseguard.service.schedule.BlockScheduleService
 import com.releaseguard.utils.exception.ResourceNotFoundException
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*

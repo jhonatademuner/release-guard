@@ -3,7 +3,7 @@ package com.releaseguard.service.merge
 import com.releaseguard.domain.github.SimplifiedGithubPullRequest
 import com.releaseguard.domain.jira.*
 import com.releaseguard.service.github.GithubService
-import com.releaseguard.service.github.branch.BlockScheduleService
+import com.releaseguard.service.schedule.BlockScheduleService
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach

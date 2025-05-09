@@ -5,7 +5,7 @@ import com.releaseguard.domain.jira.JiraLinkedIssueDirection
 import com.releaseguard.domain.jira.SimplifiedJiraIssue
 import com.releaseguard.domain.jira.SimplifiedJiraIssueStatus
 import com.releaseguard.service.github.GithubService
-import com.releaseguard.service.github.branch.BlockScheduleService
+import com.releaseguard.service.schedule.BlockScheduleService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 
