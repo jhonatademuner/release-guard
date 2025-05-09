@@ -14,12 +14,11 @@ import java.nio.charset.StandardCharsets
 class JiraService(
     private val jiraClient: JiraClient,
     private val jiraIssueAssembler: JiraIssueAssembler,
-    private val githubService: GithubService
 ) {
 
     private val logger = KotlinLogging.logger {}
 
-    fun findIssue(key: String? = null, pullRequestUrl: String? = null): SimplifiedJiraIssue {
+    fun findIssue(key: String? = null, pullRequestUrl: String? = null): SimplifiedJiraIssue? {
         return if (!key.isNullOrBlank()) {
             findIssueByKey(key)
         } else if (!pullRequestUrl.isNullOrBlank()) {
@@ -40,7 +39,7 @@ class JiraService(
         return jiraIssueAssembler.toSimplified(response.body, isUrgent)
     }
 
-    private fun findIssueByPullRequest(pullRequest: String) : SimplifiedJiraIssue {
+    private fun findIssueByPullRequest(pullRequest: String) : SimplifiedJiraIssue? {
         val query = "'hidden-pr-url[URL Field]' = '$pullRequest'"
         val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
         val params = mapOf("jql" to encodedQuery)
@@ -52,33 +51,5 @@ class JiraService(
         if (body.issues.isEmpty()) throw ResourceNotFoundException("No issue found for the provided pull request.")
 
         return jiraIssueAssembler.toSimplified(body.issues.first())
-    }
-
-    fun checkIssueBlockStatus(simplifiedJiraIssue: SimplifiedJiraIssue, pullRequestUrl: String? = null): Boolean {
-        val issueKey = simplifiedJiraIssue.key
-
-        if (simplifiedJiraIssue.isUrgent) {
-            logger.info { "[CheckIssueBlockStatus] Issue is marked as URGENT | issueKey=$issueKey | reason=Key flag" }
-            return true
-        }
-
-        if (!pullRequestUrl.isNullOrBlank()){
-            val pullRequest = githubService.findPullRequest(pullRequestUrl)
-            if(githubService.isUrgentPullRequest(pullRequest)) return true
-        }
-
-        for (issue in simplifiedJiraIssue.linkedIssues) {
-            val isBlocking = issue.type == "BLOCKS" &&
-                    issue.linkDirection == JiraLinkedIssueDirection.INWARD &&
-                    issue.status != SimplifiedJiraIssueStatus.DONE
-
-            if (isBlocking) {
-                logger.info { "[CheckIssueBlockStatus] Issue is BLOCKED | issueKey=$issueKey | blockingIssue=${issue.key} | blockingStatus=${issue.status}" }
-                return false
-            }
-        }
-
-        logger.info { "[CheckIssueBlockStatus] Issue is NOT BLOCKED | issueKey=$issueKey" }
-        return true
     }
 }

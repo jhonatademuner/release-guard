@@ -1,15 +1,12 @@
 package com.releaseguard.controller.jira
 
-import com.releaseguard.domain.jira.JiraLinkedIssueDirection
 import com.releaseguard.domain.jira.SimplifiedJiraIssue
 import com.releaseguard.domain.jira.SimplifiedJiraIssueStatus
-import com.releaseguard.domain.jira.SimplifiedJiraLinkedIssue
 import com.releaseguard.service.jira.JiraService
 import com.releaseguard.utils.exception.GlobalExceptionHandler
 import com.releaseguard.utils.exception.ResourceNotFoundException
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -36,11 +33,6 @@ class JiraControllerTest {
 
     @Autowired
     private lateinit var jiraService: JiraService
-
-    @BeforeEach
-    fun setUp() {
-        // reset mocks if needed
-    }
 
     @Test
     fun `findIssue by key should return OK and simplified issue`() {
@@ -95,55 +87,4 @@ class JiraControllerTest {
             .andExpect(jsonPath("$.path").value("/api/jira/issue"))
     }
 
-    @Test
-    fun `blockStatus by key should return OK and false when issue is blocked`() {
-        val issueKey = "JIRA-123"
-        val simplifiedIssue = SimplifiedJiraIssue(
-            key = issueKey,
-            summary = "Test",
-            status = SimplifiedJiraIssueStatus.TO_DO,
-            linkedIssues = mutableListOf(
-                SimplifiedJiraLinkedIssue(
-                    type = "BLOCKS",
-                    linkDirection = JiraLinkedIssueDirection.INWARD,
-                    status = SimplifiedJiraIssueStatus.IN_PROGRESS
-                )
-            )
-        )
-        every { jiraService.findIssue(key = issueKey, pullRequestUrl = null) } returns simplifiedIssue
-        every { jiraService.checkIssueBlockStatus(simplifiedIssue) } returns false
-
-        mockMvc.perform(get("/api/jira/issue/block-status").param("key", issueKey))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$").value(false))
-    }
-
-    @Test
-    fun `blockStatus by key should return OK and true when issue is not blocked`() {
-        val issueKey = "JIRA-123"
-        val simplifiedIssue = SimplifiedJiraIssue(
-            key = issueKey,
-            summary = "Test",
-            status = SimplifiedJiraIssueStatus.TO_DO,
-            linkedIssues = mutableListOf(
-                SimplifiedJiraLinkedIssue(
-                    type = "BLOCKS",
-                    linkDirection = JiraLinkedIssueDirection.INWARD,
-                    status = SimplifiedJiraIssueStatus.DONE
-                )
-            )
-        )
-        every { jiraService.findIssue(key = issueKey, pullRequestUrl = null) } returns simplifiedIssue
-        every { jiraService.checkIssueBlockStatus(simplifiedIssue) } returns true
-
-        mockMvc.perform(get("/api/jira/issue/block-status").param("key", issueKey))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$").value(true))
-    }
-
-    @Test
-    fun `blockStatus should return BAD_REQUEST when no parameters provided`() {
-        mockMvc.perform(get("/api/jira/issue/block-status"))
-            .andExpect(status().isBadRequest)
-    }
 }

@@ -1,8 +1,6 @@
 package com.releaseguard.utils.assembler
 
 import com.releaseguard.domain.github.GithubPullRequest
-import com.releaseguard.domain.github.GithubPullRequest.Head
-import com.releaseguard.domain.github.GithubPullRequest.Label
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -25,8 +23,9 @@ class GithubPullRequestAssemblerTest {
             number = 42,
             title = "Fix bug",
             body = "This fixes a major bug",
-            labels = listOf(Label(name = "bug", color = "f29513", defaultLabel = false)),
-            head = Head(label = "owner:bugfix", ref = "bugfix"),
+            labels = listOf(GithubPullRequest.Label(name = "bug", color = "f29513", defaultLabel = false)),
+            head = GithubPullRequest.BranchInfo(label = "owner:bugfix", ref = "bugfix"),
+            base = GithubPullRequest.BranchInfo(label = "owner:main", ref = "main"),
             createdAt = now,
             updatedAt = now
         )
@@ -64,7 +63,8 @@ class GithubPullRequestAssemblerTest {
             title = "Test PR",
             body = null,
             labels = emptyList(),
-            head = Head(label = "owner:test", ref = "test"),
+            head = GithubPullRequest.BranchInfo(label = "owner:test", ref = "test"),
+            base = GithubPullRequest.BranchInfo(label = "owner:main", ref = "main"),
             createdAt = now,
             updatedAt = now
         )

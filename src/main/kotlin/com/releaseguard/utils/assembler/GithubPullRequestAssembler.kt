@@ -17,6 +17,7 @@ class GithubPullRequestAssembler {
             body = pullRequestData.body ?: "",
             labels = toSimplifiedLabels(pullRequestData.labels),
             branch = pullRequestData.head.ref,
+            targetBranch = pullRequestData.base.ref,
             createdAt = pullRequestData.createdAt,
             updatedAt = pullRequestData.updatedAt
         )

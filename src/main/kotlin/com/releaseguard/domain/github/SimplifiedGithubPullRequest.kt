@@ -11,6 +11,7 @@ data class SimplifiedGithubPullRequest(
     var body: String = "",
     var labels: List<String> = mutableListOf(),
     var branch: String = "",
+    var targetBranch: String = "",
     var createdAt: Instant? = null,
     var updatedAt: Instant? = null,
 )
