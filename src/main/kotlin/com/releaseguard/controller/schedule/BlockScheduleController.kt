@@ -2,7 +2,6 @@ package com.releaseguard.controller.schedule
 
 import com.releaseguard.domain.schedule.BlockSchedule
 import com.releaseguard.service.schedule.BlockScheduleService
-import com.releaseguard.utils.exception.ResourceNotFoundException
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.util.*
@@ -14,21 +13,22 @@ class BlockScheduleController(
 ) {
 
     @GetMapping
-    fun getAllBlocks(): List<BlockSchedule> {
-        return blockScheduleService.getAllBlocks()
+    fun findAll(
+        @RequestParam(defaultValue = "0") page : Int,
+        @RequestParam(defaultValue = "10") resultsPerPage : Int
+    ): List<BlockSchedule> {
+        return blockScheduleService.find(page, resultsPerPage)
     }
 
     @PostMapping
-    fun addBlock(@RequestBody block: BlockSchedule): ResponseEntity<Void> {
-        blockScheduleService.addBlock(block)
+    fun create(@RequestBody block: BlockSchedule): ResponseEntity<Void> {
+        blockScheduleService.create(block)
         return ResponseEntity.ok().build()
     }
 
     @DeleteMapping("/{id}")
-    fun removeBlockById(@PathVariable id: UUID): ResponseEntity<Void> {
-        val removed = blockScheduleService.removeBlockById(id)
-        if (removed) return  ResponseEntity.ok().build()
-        throw ResourceNotFoundException("BlockSchedule with id $id not found")
+    fun removeById(@PathVariable id: UUID): ResponseEntity<BlockSchedule> {
+        return  ResponseEntity.ok(blockScheduleService.removeById(id))
     }
 
 }
