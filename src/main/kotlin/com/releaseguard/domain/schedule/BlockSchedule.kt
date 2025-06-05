@@ -1,26 +1,39 @@
 package com.releaseguard.domain.schedule
 
 import com.fasterxml.jackson.annotation.JsonFormat
-import lombok.Data
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import jakarta.persistence.*
+import org.springframework.data.annotation.CreatedDate
+import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.util.*
 
-@Data
+@Entity
+@Table(name = "block_schedule")
+@EntityListeners(AuditingEntityListener::class)
 data class BlockSchedule(
-    val id: UUID = UUID.randomUUID(),
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
+    val id: UUID? = null,
+
+    @Column(name = "branch_name", nullable = false)
     val branchName: String,
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "America/Sao_Paulo")
+    @Column(name = "start_time", nullable = false)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     val startTime: Date,
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "America/Sao_Paulo")
+    @Column(name = "end_time", nullable = false)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     val endTime: Date,
 
+    @Column(name = "reason", nullable = false)
     val reason: String,
+
+    @Column(name = "created_by", nullable = false)
     val createdBy: String,
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "America/Sao_Paulo")
-    val createdAt: Date = Date.from(ZonedDateTime.now(ZoneId.of("America/Sao_Paulo")).toInstant())
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    val createdAt: Date = Date()
 )
-

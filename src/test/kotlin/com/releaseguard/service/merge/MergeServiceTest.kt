@@ -96,7 +96,7 @@ class MergeServiceTest {
             targetBranch = "main"
         )
 
-        every { blockScheduleService.checkBranchBlockSchedule("main") } returns true
+        every { blockScheduleService.checkBranchMergeAvailability("main") } returns true
         every { githubService.isUrgentPullRequest(pr) } returns false
 
         // Act
@@ -114,7 +114,7 @@ class MergeServiceTest {
             targetBranch = "develop"
         )
 
-        every { blockScheduleService.checkBranchBlockSchedule("develop") } returns false
+        every { blockScheduleService.checkBranchMergeAvailability("develop") } returns false
         every { githubService.isUrgentPullRequest(pr) } returns true
 
         // Act
@@ -132,7 +132,7 @@ class MergeServiceTest {
             targetBranch = "release"
         )
 
-        every { blockScheduleService.checkBranchBlockSchedule("release") } returns false
+        every { blockScheduleService.checkBranchMergeAvailability("release") } returns false
         every { githubService.isUrgentPullRequest(pr) } returns false
 
         // Act

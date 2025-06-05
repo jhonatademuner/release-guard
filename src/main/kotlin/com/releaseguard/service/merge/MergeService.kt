@@ -40,7 +40,7 @@ class MergeService(
         }
 
         if (pullRequest != null){
-            if(blockScheduleService.checkBranchBlockSchedule(pullRequest.targetBranch)) return true
+            if(blockScheduleService.checkBranchMergeAvailability(pullRequest.targetBranch)) return true
             if(githubService.isUrgentPullRequest(pullRequest)) return true
         }
 

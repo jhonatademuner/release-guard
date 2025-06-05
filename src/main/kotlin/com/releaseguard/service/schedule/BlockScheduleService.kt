@@ -2,71 +2,44 @@ package com.releaseguard.service.schedule
 
 import org.springframework.stereotype.Service
 import com.releaseguard.domain.schedule.BlockSchedule
-import java.io.File
-import java.nio.file.Paths
 import java.util.*
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
+import com.releaseguard.repository.schedule.BlockScheduleRepository
+import com.releaseguard.utils.exception.ResourceNotFoundException
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import org.springframework.data.domain.PageRequest
 
 @Service
-class BlockScheduleService {
+class BlockScheduleService(
+    private val blockScheduleRepository: BlockScheduleRepository
+) {
 
     private val logger = KotlinLogging.logger {}
 
-    private val objectMapper = jacksonObjectMapper().setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"))
-    private val filePath = Paths.get("data/block-schedule.json").toAbsolutePath().toString()
-
-    fun getAllBlocks(): List<BlockSchedule> {
-        val file = File(filePath)
-        if (!file.exists() || file.length() == 0L) return emptyList()
-        val blocks = objectMapper.readValue<List<BlockSchedule>>(file)
-        val filteredBlocks = removeExpiredBlocks(blocks)
-        return filteredBlocks
+    fun find(page: Int, resultsPerPage: Int): List<BlockSchedule> {
+        return blockScheduleRepository.findAll(PageRequest.of(page, resultsPerPage)).content
     }
 
-    fun addBlock(newBlock: BlockSchedule) {
-        val blocks = getAllBlocks().toMutableList()
-        blocks.add(newBlock)
-        objectMapper.writerWithDefaultPrettyPrinter().writeValue(File(filePath), blocks)
+    fun create(newBlock: BlockSchedule) {
+        blockScheduleRepository.save(newBlock)
     }
 
-    fun removeBlockById(id: UUID): Boolean {
-        val blocks = getAllBlocks().toMutableList()
-        val removed = blocks.removeIf { it.id == id }
-        if (removed) {
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(File(filePath), blocks)
-        }
-        return removed
+    fun removeById(id: UUID): BlockSchedule {
+        val blockSchedule : BlockSchedule = blockScheduleRepository.findById(id)
+            .orElseThrow { ResourceNotFoundException("BlockSchedule with id $id not found") }
+
+        blockScheduleRepository.deleteById(id)
+        return blockSchedule
     }
 
-    fun checkBranchBlockSchedule(branchName: String): Boolean {
-        val blocks = getAllBlocks()
-        val currentTime = Date.from(ZonedDateTime.now(ZoneId.of("America/Sao_Paulo")).toInstant())
-        val branchBlock = blocks.filter { block ->
-            block.branchName == branchName && currentTime.after(block.startTime) && currentTime.before(block.endTime)
-        }
+    fun checkBranchMergeAvailability(branchName: String): Boolean {
+        val blocks : List<BlockSchedule> = blockScheduleRepository.findActiveBlocksByBranchAndDate(branchName, Date())
 
-        if (branchBlock.isNotEmpty()) {
-            logger.info { "[CheckBranchBlockSchedule] Branch is BLOCKED | branchName=$branchName | blockSchedule=$branchBlock" }
-            return true
+        if (blocks.isNotEmpty()) {
+            logger.info { "[CheckBranchBlockSchedule] Branch is BLOCKED | branchName=$branchName" }
+            return false
         }
 
         return true
     }
-
-    private fun removeExpiredBlocks(blocks: List<BlockSchedule>) : List<BlockSchedule> {
-        val currentTime = Date.from(ZonedDateTime.now(ZoneId.of("America/Sao_Paulo")).toInstant())
-        val filteredBlocks = blocks.filter { block -> currentTime.before(block.endTime) }
-        if(filteredBlocks.size != blocks.size) {
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(File(filePath), filteredBlocks)
-        }
-        logger.info { "[RemoveExpiredBlockSchedules] Removing expired block schedules" }
-        return filteredBlocks
-    }
-
-
 }
