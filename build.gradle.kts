@@ -33,6 +33,8 @@ dependencies {
 	implementation("org.slf4j:slf4j-api:2.0.16")
 	implementation("ch.qos.logback:logback-classic:1.5.16")
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5")
+	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+	runtimeOnly("org.postgresql:postgresql")
 	compileOnly("org.projectlombok:lombok")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	annotationProcessor("org.projectlombok:lombok")
