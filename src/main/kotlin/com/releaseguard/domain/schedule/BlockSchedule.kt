@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
+import java.time.LocalDateTime
 import java.util.*
 
 @Entity
@@ -21,11 +22,11 @@ data class BlockSchedule(
 
     @Column(name = "start_time", nullable = false)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    val startTime: Date,
+    val startTime: LocalDateTime,
 
     @Column(name = "end_time", nullable = false)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    val endTime: Date,
+    val endTime: LocalDateTime,
 
     @Column(name = "reason", nullable = false)
     val reason: String,
@@ -35,5 +36,5 @@ data class BlockSchedule(
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: Date = Date()
+    val createdAt: LocalDateTime = LocalDateTime.now()
 )
