@@ -14,13 +14,11 @@ spring:
     hibernate:
       ddl-auto: update
 
-# Jira Properties
-jira:
-  api-instance-url: <jira_api_instance_url>
-  api-email: <jira_api_email>
-  api-token: <jira_api_token>
-
-# GitHub Properties
-github:
-  api-url: <github_api_url>
-  api-token: <github_api_token>
+clients:
+  github:
+    base-url: https://api.github.com
+    api-token: <github_api_token>
+  jira:
+    base-url: <jira_base_url>
+    email: <jira_email>
+    api-token: <jira_api_token>
