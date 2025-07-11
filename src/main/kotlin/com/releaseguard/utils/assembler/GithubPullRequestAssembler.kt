@@ -1,29 +1,28 @@
 package com.releaseguard.utils.assembler
 
-import com.releaseguard.domain.github.GithubPullRequest
-import com.releaseguard.domain.github.SimplifiedGithubPullRequest
+import com.releaseguard.domain.github.dto.PullRequestDTO
+import com.releaseguard.domain.github.dto.SimplifiedPullRequestDTO
 import org.springframework.stereotype.Component
 
 @Component
 class GithubPullRequestAssembler {
 
-    fun toSimplified(pullRequest: GithubPullRequest?): SimplifiedGithubPullRequest {
-        val pullRequestData = pullRequest ?: return SimplifiedGithubPullRequest()
-
-        return SimplifiedGithubPullRequest(
-            url = pullRequestData.url,
-            number = pullRequestData.number,
-            title = pullRequestData.title,
-            body = pullRequestData.body ?: "",
-            labels = toSimplifiedLabels(pullRequestData.labels),
-            branch = pullRequestData.head.ref,
-            targetBranch = pullRequestData.base.ref,
-            createdAt = pullRequestData.createdAt,
-            updatedAt = pullRequestData.updatedAt
+    fun toSimplified(pullRequest: PullRequestDTO): SimplifiedPullRequestDTO {
+        return SimplifiedPullRequestDTO(
+            url = pullRequest.url,
+            number = pullRequest.number,
+            title = pullRequest.title,
+            body = pullRequest.body ?: "",
+            labels = toSimplifiedLabels(pullRequest.labels),
+            branch = pullRequest.head.ref,
+            repo = pullRequest.head.repo.name,
+            targetBranch = pullRequest.base.ref,
+            createdAt = pullRequest.createdAt,
+            updatedAt = pullRequest.updatedAt
         )
     }
 
-    private fun toSimplifiedLabels(labels: List<GithubPullRequest.Label>): List<String> {
+    private fun toSimplifiedLabels(labels: List<PullRequestDTO.Label>): List<String> {
         return labels.map { it.name }
     }
 

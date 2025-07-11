@@ -1,8 +1,9 @@
 package com.releaseguard.service.jira
 
 import com.releaseguard.client.jira.JiraClient
-import com.releaseguard.domain.jira.*
-import com.releaseguard.service.github.GithubService
+import com.releaseguard.domain.jira.dto.IssueDTO
+import com.releaseguard.domain.jira.dto.IssueSearchDTO
+import com.releaseguard.domain.jira.dto.SimplifiedIssueDTO
 import com.releaseguard.utils.assembler.JiraIssueAssembler
 import com.releaseguard.utils.exception.ResourceNotFoundException
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -18,38 +19,29 @@ class JiraService(
 
     private val logger = KotlinLogging.logger {}
 
-    fun findIssue(key: String? = null, pullRequestUrl: String? = null): SimplifiedJiraIssue? {
-        return if (!key.isNullOrBlank()) {
-            findIssueByKey(key)
-        } else if (!pullRequestUrl.isNullOrBlank()) {
+    fun findIssue(pullRequestUrl: String? = null): SimplifiedIssueDTO? {
+        return if (!pullRequestUrl.isNullOrBlank()) {
             findIssueByPullRequest(pullRequestUrl)
         } else {
             throw IllegalArgumentException("Either key or pullRequestUrl must be provided.")
         }
     }
 
-    private fun findIssueByKey(key: String) : SimplifiedJiraIssue {
-        val isUrgent = key.first() == '!'
-        var formattedKey = key
-        if (isUrgent) {
-            formattedKey = key.substring(1)
-        }
-        logger.info { "[FindIssue] Fetching JIRA issue by Key | key=$formattedKey" }
-        val response = jiraClient.get("/rest/api/3/issue/$formattedKey", JiraIssue::class.java)
-        return jiraIssueAssembler.toSimplified(response.body, isUrgent)
-    }
+    private fun findIssueByPullRequest(pullRequest: String): SimplifiedIssueDTO? {
+        val commentQuery = "\"[RELEASE-GUARD] Pull Request: $pullRequest\""
+        val jql = """comment ~ '$commentQuery'"""
+        val encodedJql = URLEncoder.encode(jql, StandardCharsets.UTF_8.toString())
 
-    private fun findIssueByPullRequest(pullRequest: String) : SimplifiedJiraIssue? {
-        val query = "'hidden-pr-url[URL Field]' = '$pullRequest'"
-        val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
-        val params = mapOf("jql" to encodedQuery)
+        val params = mapOf("jql" to encodedJql)
 
         logger.info { "[FindIssue] Fetching JIRA issue by Pull Request | pullRequest=$pullRequest" }
-        val response = jiraClient.get("/rest/api/3/search", JiraJqlResult::class.java, params)
+        val response = jiraClient.get("/rest/api/3/search", IssueSearchDTO::class.java, params)
         val body = requireNotNull(response.body) { "Jira response body was null." }
 
         if (body.issues.isEmpty()) throw ResourceNotFoundException("No issue found for the provided pull request.")
 
         return jiraIssueAssembler.toSimplified(body.issues.first())
     }
+
+
 }
